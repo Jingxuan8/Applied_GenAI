@@ -522,6 +522,22 @@ async def router_agent(user_query: str) -> str:
     q = user_query.lower().strip()
     log(f"\n Router received query: {user_query!r}")
 
+    # Scenario 1 Task Allocation
+    m_account_help = re.search(
+        r"need help with my account.*customer id\s+(\d+)", q
+    )
+    if m_account_help:
+        customer_id = int(m_account_help.group(1))
+        log(f"[Router -> DataAgent] Task allocation: get_customer({customer_id}) for account_help")
+        customer = await customer_data_agent({"type": "get_customer", "customer_id": customer_id})
+        if "error" in customer:
+            return f"Customer {customer_id} not found."
+
+        log("[Router -> SupportAgent] Scenario: account_help")
+        reply = await support_agent({"scenario": "account_help", "customer": customer})
+        log("[SupportAgent -> Router] Account help message ready.")
+        return reply
+
     # 1. Simple Query
     # "Get customer information for ID 5"
     m_simple = re.search(r"get customer information for id\s+(\d+)", q)
@@ -538,7 +554,34 @@ async def router_agent(user_query: str) -> str:
             f"Status: {customer['status']}"
         )
 
-    # 2. Coordinated Query
+    # 2. Scenario 3 (Multi-Step high-priority report):
+    # "What's the status of all high-priority tickets for premium customers?"
+    if (
+        ("high-priority" in q or "high priority" in q)
+        and "tickets" in q
+        and "premium" in q
+    ):
+        log("[Router -> DataAgent] Multi-step: list premium (active) customers")
+        customers = await customer_data_agent({"type": "list_premium_customers"})
+        high_priority_open_tickets = []
+
+        for c in customers:
+            cid = c["id"]
+            history = await customer_data_agent({"type": "get_history", "customer_id": cid})
+            for t in history:
+                if t["priority"] == "high" and t["status"] in ("open", "in_progress"):
+                    high_priority_open_tickets.append(t)
+
+        log(f"[Router] Found {len(high_priority_open_tickets)} high-priority tickets for premium customers.")
+        log("[Router -> SupportAgent] Scenario: tickets_report")
+        reply = await support_agent({
+            "scenario": "tickets_report",
+            "high_priority_open_tickets": high_priority_open_tickets,
+        })
+        log("[SupportAgent -> Router] High-priority tickets report ready.")
+        return reply
+
+    # 3. Coordinated Query
     # "I'm customer 12345 and need help upgrading my account"
     m_upgrade = re.search(r"i[' ]m customer\s+(\d+)", q)
     if m_upgrade and "account" in q and "upgrad" in q:
@@ -551,7 +594,7 @@ async def router_agent(user_query: str) -> str:
         log("[SupportAgent -> Router] Coordinated upgrade message ready.")
         return reply
 
-    # 3. Complex Query
+    # 4. Complex Query
     # "Show me all active customers who have open tickets"
     if "active customers" in q and "open tickets" in q:
         log("[Router -> DataAgent] Complex: list_customers(status='active')")
@@ -578,7 +621,27 @@ async def router_agent(user_query: str) -> str:
         log("[SupportAgent -> Router] Complex query report ready.")
         return reply
 
-    # 4. Escalation
+    # 5. Story Scenario 2: Negotiation/Escalation
+    # "I want to cancel my subscription but I'm having billing issues"
+    if "cancel" in q and "billing" in q:
+        customer_id = 1  # demo: assume current user is customer 1
+        log(f"[Router] Negotiation/Escalation detected for customer {customer_id}.")
+        log("[Router -> SupportAgent] Can you handle this cancellation + billing issue?")
+        log("[SupportAgent -> Router] I need billing context for this customer (simulated).")
+
+        customer = await customer_data_agent({"type": "get_customer", "customer_id": customer_id})
+        history = await customer_data_agent({"type": "get_history", "customer_id": customer_id})
+
+        log("[Router -> SupportAgent] Scenario: billing_cancel with billing context")
+        reply = await support_agent({
+            "scenario": "billing_cancel",
+            "customer": customer,
+            "tickets": history,
+        })
+        log("[SupportAgent -> Router] Billing cancel negotiation response ready.")
+        return reply
+
+    # 6. Escalation
     # "I've been charged twice, please refund immediately!"
     if "charged twice" in q and "refund" in q:
         # Demo: assume current user is customer_id=1
@@ -596,13 +659,12 @@ async def router_agent(user_query: str) -> str:
         log("[SupportAgent -> Router] Urgent escalation message ready.")
         return reply
 
-    # 5. Multi-Intent
+    # 7. Multi-Intent
     # "Update my email to new@email.com and show my ticket history"
     m_email = re.search(r"update my email to\s+([^\s]+)", q)
     if m_email and "ticket history" in q:
         new_email = m_email.group(1)
-        # Demo: assume current user is customer_id=1
-        customer_id = 1
+        customer_id = 1  # assume current user is customer 1
         log(f"[Router] Multi-intent detected: update_email + show_history for customer {customer_id}")
 
         customer = await customer_data_agent({"type": "get_customer", "customer_id": customer_id})
@@ -639,19 +701,40 @@ async def router_agent(user_query: str) -> str:
 
 async def run_assignment_test_scenarios():
     """
-    End-to-end demo (single process): shows Router/Data/Support coordination
-    for all required test queries.
+    End-to-end demo: runs ALL required scenarios
+    - 5 assignment test scenarios
+    - 3 scenarios from Part 3
     """
-    queries = [
+
+    # ---- 5 official test scenarios from assignment ----
+    test_queries = [
+        # Simple Query
         "Get customer information for ID 5",
+        # Coordinated Query (upgrade)
         "I'm customer 1 and need help upgrading my account",
+        # Complex Query (active customers with open tickets)
         "Show me all active customers who have open tickets",
+        # Escalation (charged twice, urgent refund)
         "I've been charged twice, please refund immediately!",
+        # Multi-Intent (update email + ticket history)
         "Update my email to new_email@example.com and show my ticket history",
     ]
 
-    for q in queries:
+    # ---- 3 scenarios from Part 3 (Task allocation / Negotiation / Multi-step) ----
+    story_queries = [
+        # Scenario 1: Task allocation
+        "I need help with my account, customer ID 3",
+        # Scenario 2: Negotiation / Escalation (cancel + billing issues)
+        "I want to cancel my subscription but I'm having billing issues",
+        # Scenario 3: Multi-step high-priority tickets for premium customers
+        "What's the status of all high-priority tickets for premium customers?",
+    ]
+
+    all_queries = test_queries + story_queries
+
+    for idx, q in enumerate(all_queries, start=1):
         print("\n" + "=" * 80)
+        print(f" Scenario #{idx}: {q!r}")
         answer = await router_agent(q)
         print("\n[Final Answer to User]")
         print(answer)
