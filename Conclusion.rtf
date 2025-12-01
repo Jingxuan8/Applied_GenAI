@@ -1,0 +1,10 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2761
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 .AppleSystemUIFontMonospaced-Regular;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
+{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;}
+\margl1440\margr1440\vieww29200\viewh16240\viewkind0
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f0\fs26 \cf2 In this assignment I implemented a multi-agent customer service system that combines an MCP server and A2A-compatible agents. The MCP layer exposes database tools such as `get_customer`, `list_customers`, `update_customer`, `create_ticket`, and `get_customer_history`, and the customer data agent uses only these tools instead of talking to SQLite directly. On top of that, the router and support agents coordinate to handle simple lookups, upgrades, complex reporting, and multi-intent queries.\
+\
+The main challenges were wiring the MCP stdio server correctly so it works with external clients, and structuring the router logic to cover all scenarios without creating loops. I also had to be careful with logging so that the A2A coordination is easy to debug and understand. Overall, this project helped me understand how to separate concerns between tools, data-access agents, and higher-level orchestration, which is very close to how real production agentic systems are built.}
