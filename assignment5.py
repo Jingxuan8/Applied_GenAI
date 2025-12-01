@@ -706,7 +706,7 @@ async def run_assignment_test_scenarios():
     - 3 scenarios from Part 3
     """
 
-    # ---- 5 official test scenarios from assignment ----
+    # 5 official test scenarios from assignment
     test_queries = [
         # Simple Query
         "Get customer information for ID 5",
@@ -720,7 +720,7 @@ async def run_assignment_test_scenarios():
         "Update my email to new_email@example.com and show my ticket history",
     ]
 
-    # ---- 3 scenarios from Part 3 (Task allocation / Negotiation / Multi-step) ----
+    # 3 scenarios from Part 3 (Task allocation / Negotiation / Multi-step)
     story_queries = [
         # Scenario 1: Task allocation
         "I need help with my account, customer ID 3",
