@@ -15,7 +15,7 @@ db_server_params = StdioServerParameters(
 )
 
 customer_data_agent = LlmAgent(
-    model="gemini-2.5-flash-lite",
+    model="gemini-2.5-flash",
     name="customer_data_agent",
     description="Specialist for customer profiles and ticket history via MCP DB tools.",
     instruction=(
