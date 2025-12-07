@@ -17,7 +17,7 @@ support_remote = RemoteA2aAgent(
 )
 
 router_agent = LlmAgent(
-    model="gemini-2.5-flash-lite",
+    model="gemini-2.5-flash",
     name="router_agent",
     description="Router/orchestrator for multi-agent customer service with A2A.",
     instruction=(
