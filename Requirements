@@ -1,0 +1,12 @@
+	•	Python 3.10+ (tested with 3.12)
+	•	A valid Gemini API key (Google AI Studio)
+
+Python dependencies (simplified):
+	•	google-adk
+	•	google-genai
+	•	uvicorn
+	•	a2a-server
+	•	fastapi
+	•	sqlite3 (standard library)
+
+pip install "google-adk>=0.3.0" google-genai uvicorn "a2a-server>=0.3.0" fastapi
