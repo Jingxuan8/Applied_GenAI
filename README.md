@@ -1,67 +1,65 @@
 # Assignment 5 – Multi-Agent Customer Service System (MCP + A2A)
 
-This repository implements a multi-agent customer service system using:
+This repository implements a **multi-agent customer service system** for the Applied GenAI assignment.
 
-- An **MCP server** for database tools (`tools/list` and `tools/call`)
-- **A2A-compatible agents** (Router Agent, Customer Data Agent, Support Agent)
-- An end-to-end **Python demo** that runs all required scenarios (5 test cases + 3 story scenarios)
+The system uses:
+
+- **Three LLM-backed agents** (Router, Customer Data Agent, Support Agent)
+- **Agent-to-Agent (A2A) communication** for coordination
+- **MCP server + SQLite** for customer & ticket data
+- An **end-to-end demo script** (`demo.py`) that runs the required test scenarios and prints the full trace of agent coordination.
 
 ---
 
-## 1. Files
+## 1. Architecture
 
-- `assignment5.py`  
-  - **MCP server implementation**
-    - `run_mcp_stdio()`
-    - `@server.list_tools`
-    - `@server.call_tool`
-  - **MCP tools**
+### 1.1 Agents
+
+- **Router Agent (`router_agent/agent.py`)**
+  - Entry point for all user queries
+  - Parses intent (lookup, account upgrade, refund, reporting, multi-intent, etc.)
+  - Decides which specialist agent(s) to call via A2A
+  - Synthesizes final answer for the user
+
+- **Customer Data Agent (`customer_data_agent/agent.py`)**
+  - Specialist for **customer profiles** and **ticket history**
+  - Exposes MCP tools on top of a SQLite database:
     - `get_customer(customer_id)`
     - `list_customers(status, limit)`
     - `update_customer(customer_id, data)`
     - `create_ticket(customer_id, issue, priority)`
     - `get_customer_history(customer_id)`
-  - **Core agents (Python-level)**
-    - `router_agent(user_query: str)`
-    - `customer_data_agent(task: dict)`
-    - `support_agent(task: dict)`
-  - **A2A agent wrappers** (when `python_a2a` is installed)
-    - `CustomerDataA2A` – wraps Customer Data Agent
-    - `SupportA2A` – wraps Support Agent
-    - `RouterA2A` – wraps Router Agent
-  - **End-to-end demo runner**
-    - `run_assignment_test_scenarios()`  
-      Runs:
-      - 5 official test scenarios
-      - 3 “story” scenarios (task allocation, negotiation, multi-step)
 
-- `database_setup.py`  
-  - Instructor-provided script used by `ensure_db_initialized()`.
-  - Creates `support.db`, tables, triggers, and inserts sample data the first time the MCP tools are called.
+- **Support Agent (`support_agent/agent.py`)**
+  - Specialist for **support flows**, especially **billing and refunds**
+  - Handles:
+    - Account upgrade questions
+    - Double-charge / refund issues (treated as *high priority*)
+    - Ticket creation using MCP tools
+  - Coordinates with customer data when necessary
 
-- `requirements.txt`  
-  - Python dependencies for MCP + A2A:
-    - `mcp`
-    - `python-a2a[all]`
+### 1.2 Database (MCP)
 
-- `run_demo.sh`  
-  - Convenience script to run all 8 scenarios end-to-end:
-    - Calls: `python assignment5.py demo`
-  - Shows full logs of:
-    - Router → DataAgent
-    - Router → SupportAgent
-    - Final user-facing answers
-
-- `run_mcp.sh`  
-  - Convenience script to start the MCP stdio server:
-    - Calls: `python assignment5.py mcp`
-  - Can be used with an external MCP client (e.g. MCP Inspector) to exercise `tools/list` and `tools/call`.
+- SQLite database: `support.db`
+- Initialized via `database_setup.py` (tables, triggers, sample data)
+- Tables:
+  - `customers`
+  - `tickets`
+- Each MCP tool in the agents maps directly to SQL operations on this DB.
 
 ---
 
-## 2. Environment Setup (local)
+## 2. Repository Structure
 
-```bash
-python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+```text
+Applied_GenAI/
+├─ router_agent/
+│  └─ agent.py              # Router agent (LLM + A2A)
+├─ customer_data_agent/
+│  └─ agent.py              # Customer Data Agent + MCP tools
+├─ support_agent/
+│  └─ agent.py              # Support Agent + MCP tools
+├─ database_setup.py        # Creates support.db, tables, triggers, seed data
+├─ demo.py                  # End-to-end demo runner (A2A + MCP)
+├─ requirements.txt         # (Optional) Python dependencies
+└─ README.md                # This file
