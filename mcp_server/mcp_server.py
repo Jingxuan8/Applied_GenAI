@@ -13,6 +13,7 @@ from db import (
     update_customer_record,
     create_ticket_record,
     fetch_ticket_history,
+    fetch_active_customers_with_open_tickets,
 )
 
 server = Server("customer-support-db")
@@ -116,6 +117,16 @@ async def list_tools() -> list[Tool]:
                 "required": ["customer_id"],
             },
         ),
+        Tool(
+            name="list_active_customers_with_open_tickets",
+            description="List all active customers who have at least one open ticket.",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": False,
+            },
+        ),
     ]
 
 # Per-tool handlers
@@ -196,6 +207,17 @@ async def handle_get_customer_history(args: Dict[str, Any]) -> Dict[str, Any]:
         "tickets": tickets,
     }
 
+async def handle_list_active_customers_with_open_tickets(
+    args: Dict[str, Any] | None = None,
+) -> Dict[str, Any]:
+    ensure_db_initialized()
+    customers = fetch_active_customers_with_open_tickets()
+    return {
+        "ok": True,
+        "count": len(customers),
+        "customers": customers,
+    }
+
 # tools/call implementation
 @server.call_tool()
 async def call_tool(name: str, arguments: Dict[str, Any]) -> list[TextContent]:
@@ -210,6 +232,8 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> list[TextContent]:
             result = await handle_create_ticket(arguments)
         elif name == "get_customer_history":
             result = await handle_get_customer_history(arguments)
+        elif name == "list_active_customers_with_open_tickets":
+            result = await handle_list_active_customers_with_open_tickets(arguments)
         else:
             result = {
                 "ok": False,
@@ -227,6 +251,7 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> list[TextContent]:
             text=json.dumps(result, ensure_ascii=False),
         )
     ]
+
 
 # stdio entrypoint
 async def main() -> None:
