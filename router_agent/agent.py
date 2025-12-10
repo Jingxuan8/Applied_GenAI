@@ -17,7 +17,7 @@ support_remote = RemoteA2aAgent(
 )
 
 router_agent = LlmAgent(
-    model="gemini-2.5-flash",
+    model="gemini-2.5-flash-lite",
     name="router_agent",
     description="Router/orchestrator for multi-agent customer service with A2A.",
     instruction=(
@@ -45,10 +45,9 @@ router_agent = LlmAgent(
         "   treat them as high priority and ensure a ticket is created via support_remote.\n"
         "6. For multi-intent queries (e.g., 'Update my email and show my ticket history'),\n"
         "   decompose into sub-tasks and coordinate them.\n"
-        "7. For complex queries like 'Show me all active customers who have open tickets',\n"
-        "   first use customer_data_remote to identify active customers, then use MCP tools\n"
-        "   (via customer_data_remote or support_remote as appropriate) to get open/high-\n"
-        "   priority tickets, and finally synthesize a summary.\n"
+        "7. For queries like 'Show me all active customers who have open tickets',\n"
+        "   delegate to customer_data_remote and let it use the MCP tool that lists\n"
+        "   active customers with open tickets, then summarize the results.\n"
     ),
     sub_agents=[customer_data_remote, support_remote],
 )
