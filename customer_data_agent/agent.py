@@ -15,15 +15,16 @@ db_server_params = StdioServerParameters(
 )
 
 customer_data_agent = LlmAgent(
-    model="gemini-2.5-flash",
+    model="gemini-2.5-flash-lite",
     name="customer_data_agent",
     description="Specialist for customer profiles and ticket history via MCP DB tools.",
     instruction=(
-        "You are a customer data specialist.\n"
-        "- Use MCP tools to read/update customer records.\n"
-        "- Use MCP tools to get ticket history for a specific customer.\n"
-        "- Never guess IDs; always use IDs given by the router or user.\n"
-        "- Clearly show important fields and summarize them.\n"
+    "You are a customer data specialist.\n"
+    "- Use MCP tools to read/update customer records.\n"
+    "- Use MCP tools to get ticket history for a specific customer.\n"
+    "- For queries like 'active customers with open tickets', call the MCP tool that lists active customers who have open tickets.\n"
+    "- Never guess IDs; always use IDs given by the router or user.\n"
+    "- Clearly show important fields and summarize them.\n"
     ),
     tools=[
         McpToolset(
