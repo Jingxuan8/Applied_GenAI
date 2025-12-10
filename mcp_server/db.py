@@ -14,6 +14,7 @@ from database_setup import DatabaseSetup
 
 DB_PATH = Path("support.db")
 
+
 def ensure_db_initialized() -> None:
     if DB_PATH.exists():
         return
@@ -27,12 +28,14 @@ def ensure_db_initialized() -> None:
     db.close()
     print("[DB_ACCESS] Database initialized at", DB_PATH)
 
+
 def _get_connection() -> sqlite3.Connection:
     ensure_db_initialized()
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
+
 
 # Customer helpers
 def fetch_customer(customer_id: int) -> Optional[Dict[str, Any]]:
@@ -76,11 +79,12 @@ def fetch_customers(
         rows = cursor.fetchall()
         return [dict(row) for row in rows]
 
+
 def update_customer_record(
     customer_id: int,
     data: Dict[str, Any],
 ) -> Optional[Dict[str, Any]]:
-    allowed_fields = {"name", "email", "status"}
+    allowed_fields = {"name", "email", "phone", "status"}
     updates: Dict[str, Any] = {k: v for k, v in data.items() if k in allowed_fields}
 
     if not updates:
@@ -104,6 +108,7 @@ def update_customer_record(
         conn.commit()
 
     return fetch_customer(customer_id)
+
 
 # Ticket helpers
 def create_ticket_record(
@@ -149,11 +154,28 @@ def fetch_ticket_history(customer_id: int) -> List[Dict[str, Any]]:
         return [dict(row) for row in rows]
 
 
+def fetch_active_customers_with_open_tickets() -> List[Dict[str, Any]]:
+    with _get_connection() as conn:
+        cursor = conn.execute(
+            """
+            SELECT DISTINCT c.*
+            FROM customers c
+            JOIN tickets t ON t.customer_id = c.id
+            WHERE c.status = 'active'
+              AND t.status = 'open'
+            """
+        )
+        rows = cursor.fetchall()
+        return [dict(r) for r in rows]
+
+
 __all__ = [
     "DB_PATH",
+    "ensure_db_initialized",
     "fetch_customer",
     "fetch_customers",
     "update_customer_record",
     "create_ticket_record",
     "fetch_ticket_history",
+    "fetch_active_customers_with_open_tickets",
 ]
