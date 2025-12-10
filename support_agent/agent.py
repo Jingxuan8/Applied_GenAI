@@ -15,7 +15,7 @@ db_server_params = StdioServerParameters(
 )
 
 support_agent = LlmAgent(
-    model="gemini-2.5-flash",
+    model="gemini-2.5-flash-lite",
     name="support_agent",
     description="Handles general support, billing, cancellations, and escalation.",
     instruction=(
